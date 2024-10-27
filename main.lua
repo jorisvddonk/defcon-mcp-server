@@ -4,6 +4,7 @@ local infile
 local outfile
 local offset = 0
 local getStateNext = true
+local test = false
 
 -- Required by luabot binding.
 function OnInit()
@@ -39,6 +40,56 @@ function OnEvent (eventtype, sourceID, targetID, unittype, longitude, latitude)
   DebugLog("--- GOT AN EVENT ---")
 end
 
+function PlaceFleetAngle(longitude, latitude, type, angle)
+  -- angle goes from 1 to 6
+  local dist = 2
+  local a = ((math.pi * 2) / 6) * (angle - 1)
+  local lat = latitude + (math.sin(a) * dist)
+  local lon = longitude + (math.cos(a) * dist)
+  PlaceFleet(lon, lat, type)
+end
+
+function attemptFleet(longitude, latitude, type1, type2, type3, type4, type5, type6)
+  local a = IsValidPlacementLocation(longitude, latitude, "Sub")
+  if a == true then
+    DebugLog("Valid placement (Fleet): " .. longitude .. " / " .. latitude)
+    local t1 = ensureIsShipType(type1)
+    local t2 = ensureIsShipType(type2)
+    local t3 = ensureIsShipType(type3)
+    local t4 = ensureIsShipType(type4)
+    local t5 = ensureIsShipType(type5)
+    local t6 = ensureIsShipType(type6)
+    if t1 then
+      DebugLog("1 - " .. t1)
+      PlaceFleetAngle(longitude, latitude, t1, 1)
+    end
+    if t2 then
+      DebugLog("2 - " .. t2)
+      PlaceFleetAngle(longitude, latitude, t2, 2)
+    end
+    if t3 then
+      DebugLog("3 - " .. t3)
+      PlaceFleetAngle(longitude, latitude, t3, 3)
+    end
+    if t4 then
+      DebugLog("4 - " .. t4)
+      PlaceFleetAngle(longitude, latitude, t4, 4)
+    end
+    if t5 then
+      DebugLog("5 - " .. t5)
+      PlaceFleetAngle(longitude, latitude, t5, 5)
+    end
+    if t6 then
+      DebugLog("6 - " .. t6)
+      PlaceFleetAngle(longitude, latitude, t6, 6)
+    end
+  else
+    --DebugLog("Invalid placement")
+    WhiteboardDraw(longitude-0.5, latitude, longitude+0.5, latitude)
+    WhiteboardDraw(longitude, latitude+0.5, longitude, latitude-0.5)
+  end
+end
+
 function attemptPlace(longitude, latitude, typename)
   if typename ~= "RadarStation" and typename ~= "Silo" and typename ~= "AirBase" then
     DebugLog("Attempting to place structure, but typename provided is not supported!")
@@ -69,6 +120,14 @@ function attemptDefensiveSilo(siloID, longitude, latitude)
   if id ~= nil then
     SetState(id, 1)
   end
+end
+
+function ensureIsShipType(type)
+  if type == "Sub" or type == "Carrier" or type == "BattleShip" then
+    DebugLog("Yep, it's good: " .. type)
+    return type
+  end
+  return nil
 end
 
 function getThingByID(type, idstr, mineOnly)
@@ -161,6 +220,10 @@ function MTLTest()
   while true do
     coroutine.yield()
     if GetGameTick() % 10 == 0 then
+      if test then
+        attemptFleet(-150.0, 30.0, "Sub", "Sub", "Sub", "Sub", "Sub", "Sub")
+        test = false
+      end
 
       -- write output
       if getStateNext == true then
@@ -201,9 +264,36 @@ function MTLTest()
             attemptDefensiveSilo(d)
           end
 
-          local a, b, c = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"(.*)\"%)")
+          -- note: below command also allows non-quoted types, as that's a common LLM mistake.
+          local a, b, c = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
           if a then
             attemptPlace(a, b, c)
+          end
+
+          -- note: below command also allows non-quoted types, as that's a common LLM mistake.
+          local e, f, g, h, i, j, k, l = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          if e then
+            attemptFleet(e, f, g, h, i, j, k, l)
+          end
+          local e, f, g, h, i, j, k = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          if e then
+            attemptFleet(e, f, g, h, i, j, k)
+          end
+          local e, f, g, h, i, j = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          if e then
+            attemptFleet(e, f, g, h, i, j)
+          end
+          local e, f, g, h, i = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          if e then
+            attemptFleet(e, f, g, h, i)
+          end
+          local e, f, g, h = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          if e then
+            attemptFleet(e, f, g, h)
+          end
+          local e, f, g = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
+          if e then
+            attemptFleet(e, f, g)
           end
         end
       end
