@@ -64,6 +64,13 @@ function attemptNuke(siloID, longitude, latitude)
   end
 end
 
+function attemptDefensiveSilo(siloID, longitude, latitude)
+  local id = getThingByID("Silo", siloID, true)
+  if id ~= nil then
+    SetState(id, 1)
+  end
+end
+
 function getThingByID(type, idstr, mineOnly)
   local ud = {}
   GetAllUnitData(ud)
@@ -138,6 +145,13 @@ function GetGameState()
         outfile:write(string.sub(tostring(id), 2, -2) .. ", " --[[ .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. ", " --]] .. tostring(GetNukeCount(id)) .. "\n")
       end
     end
+
+    outfile:write("\nYour silos without any nukes (SiloID) - HINT, you may want to set these to defensive mode!:\n")
+    for id, unit in pairs(ud) do
+      if unit["team"] == teamid and unit["type"] == "Silo" and GetNukeCount(id) == 0 then
+        outfile:write(string.sub(tostring(id), 2, -2) .. "\n")
+      end
+    end
   end
 
   outfile:flush()
@@ -180,6 +194,11 @@ function MTLTest()
           local z, x, v = string.match(line, "^LaunchNukeFromSilo%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)")
           if z then
             attemptNuke(z, x, v)
+          end
+
+          local d = string.match(line, "^StopLaunchingNukesFromSiloAndGoDefensive%(([0-9]*)%)")
+          if d then
+            attemptDefensiveSilo(d)
           end
 
           local a, b, c = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"(.*)\"%)")
