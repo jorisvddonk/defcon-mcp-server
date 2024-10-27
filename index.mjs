@@ -70,6 +70,8 @@ async function main() {
 
         } else if (line.startsWith("SendChat")) {
 
+        } else if (line.startsWith("PlaceFleet")) {
+
         } else if (line.startsWith("LaunchNukeFromSilo")) {
 
         } else if (line.startsWith("StopLaunchingNukesFromSiloAndGoDefensive")) {
