@@ -7,13 +7,22 @@ const LMStudioClient = lmstudio.LMStudioClient;
 const INPUTFILE = "R:\\input.txt";
 const OUTPUTFILE = "R:\\output.txt";
 
+let PROMPTSETTING;
+let PROMPTFILE;
+let defconLevel = 5;
+
 async function main() {
   try {
     fs.unlinkSync(INPUTFILE);
   } catch (e) { }
   fs.writeFileSync(INPUTFILE, "");
+  PROMPTFILE = JSON.parse(fs.readFileSync("./initial_convo.json").toString());
 
-  const PROMPTSETTING = JSON.parse(fs.readFileSync("./initial_convo.json").toString());
+  function updatePromptSetting() {
+    PROMPTSETTING = PROMPTFILE[`defcon_${defconLevel}`] || PROMPTFILE[`defcon_5`];
+  }
+
+
   const client = new lmstudio.LMStudioClient({
     baseUrl: "ws://127.0.0.1:1234",
     clientPasskey: 'lm-studio'
@@ -34,7 +43,7 @@ async function main() {
   let lastGameState = "";
 
   async function generateResponse() {
-    logger.color('yellow').bgColor('blue').log("New turn start");
+    logger.color('yellow').bgColor('blue').log(`New turn start - DEFCON ${defconLevel}`);
     // Create a text completion prediction
     let prompt = [].concat(PROMPTSETTING.initial, [{"role": "user", "content": lastGameState}], PROMPTSETTING.prompt);
     const prediction = llama3.respond(prompt, {
@@ -60,6 +69,10 @@ async function main() {
         } else if (line.startsWith("WhiteboardDraw")) {
 
         } else if (line.startsWith("SendChat")) {
+
+        } else if (line.startsWith("LaunchNukeFromSilo")) {
+
+        } else if (line.startsWith("StopLaunchingNukesFromSiloAndGoDefensive")) {
 
         } else {
           color = 'red';
@@ -96,12 +109,17 @@ async function main() {
       }
       if (newOutputOffset > lastOutputOffset) {
         logger.color('blue').bgColor('yellow').log("Got response from game");
+        updatePromptSetting();
         const stream = fs.createReadStream(OUTPUTFILE, { start: lastOutputOffset, end: newOutputOffset });
         let collected = "";
         stream.on("data", chunk => {
           collected += chunk.toString();
         });
         await pipeline(stream, (a) => {return a});
+        let match = collected.match(/DEFCON level: (\d+)/);
+        if (match) {
+          defconLevel = parseInt(match[1]);
+        }
         logger.color('blue').log(collected);
         lastGameState = collected;
         /*prompt.push({

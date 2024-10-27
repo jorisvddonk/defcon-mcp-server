@@ -40,6 +40,10 @@ function OnEvent (eventtype, sourceID, targetID, unittype, longitude, latitude)
 end
 
 function attemptPlace(longitude, latitude, typename)
+  if typename ~= "RadarStation" and typename ~= "Silo" and typename ~= "AirBase" then
+    DebugLog("Attempting to place structure, but typename provided is not supported!")
+    return
+  end
   local a = IsValidPlacementLocation(longitude, latitude, typename)
   if a == true then
     DebugLog("Valid placement (" .. typename .. "): " .. longitude .. " / " .. latitude)
@@ -51,42 +55,87 @@ function attemptPlace(longitude, latitude, typename)
   end
 end
 
+function attemptNuke(siloID, longitude, latitude)
+  local id = getThingByID(siloID, true)
+  if id ~= nil then
+    SetState(id, 0)
+    SetActionTarget(id, null, longitude, latitude)
+    WhiteboardDraw(GetLongitude(id), GetLatitude(id), longitude, latitude)
+  end
+end
+
+function getThingByID(idstr, mineOnly)
+  local ud = {}
+  GetAllUnitData(ud)
+  for id, unit in pairs(ud) do
+    if string.sub(tostring(id), 2, -2) == idstr then
+      if mineOnly == false or (mineOnly == true and unit["team"] == GetOwnTeamID()) then
+        return id
+      end
+    end
+  end
+end
+
 function GetGameState()
   local teamid = GetOwnTeamID()
+  local cityids = GetCityIDs()
+  local defcon = GetDefconLevel()
   local ud = {}
   local a, b
   GetAllUnitData(ud)
-  outfile:write("\nYour units and buildings currently on the map (typename, longitude, latitude):\n")
+
+  outfile:write("\nDEFCON level: " .. defcon .. "\n\n")
+
+  outfile:write("\nYour units and buildings currently on the map (id, typename, longitude, latitude):\n")
   for id, unit in pairs(ud) do
     if unit["team"] == teamid then
-      outfile:write(tostring(unit["type"]) .. ", " .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. "\n")
+      outfile:write(string.sub(tostring(id), 2, -2) .. ", " .. tostring(unit["type"]) .. ", " .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. "\n")
     end
   end
 
   outfile:write("\nThese are the cities you must protect (longitude, latitude, population):\n")
 
-  local cityids = GetCityIDs()
   for _, id in ipairs(cityids) do
     if GetTeamID(id) == teamid then
       outfile:write(tostring(GetLongitude(id)) .. ", " .. tostring(GetLatitude(id)) .. ", " .. tostring(GetCityPopulation(id)) .. "\n")
     end
   end
 
-  outfile:write("\nYou can still place:\n")
-  if GetRemainingUnits("Silo") > 0 then
-    outfile:write("Silo - " .. GetRemainingUnits("Silo") .. "\n")
-  else
-    outfile:write("NO Silo - do not try to place this!\n")
+  if GetDefconLevel() >= 4 then
+    outfile:write("\nYou can still place:\n")
+    if GetRemainingUnits("Silo") > 0 then
+      outfile:write("Silo - " .. GetRemainingUnits("Silo") .. "\n")
+    else
+      outfile:write("NO Silo - do not try to place this!\n")
+    end
+    if GetRemainingUnits("RadarStation") > 0 then
+      outfile:write("RadarStation - " .. GetRemainingUnits("RadarStation") .. "\n")
+    else
+      outfile:write("NO RadarStation - do not try to place this!\n")
+    end
+    if GetRemainingUnits("AirBase") > 0 then
+      outfile:write("AirBase - " .. GetRemainingUnits("AirBase") .. "\n")
+    else
+      outfile:write("NO AirBase - do not try to place this!\n")
+    end
   end
-  if GetRemainingUnits("RadarStation") > 0 then
-    outfile:write("RadarStation - " .. GetRemainingUnits("RadarStation") .. "\n")
-  else
-    outfile:write("NO RadarStation - do not try to place this!\n")
+
+  if GetDefconLevel() <= 3 then
+    outfile:write("\nThese are the cities you must DESTROY (longitude, latitude, population):\n")
+    for _, id in ipairs(cityids) do
+      if GetTeamID(id) ~= teamid then
+        outfile:write(tostring(GetLongitude(id)) .. ", " .. tostring(GetLatitude(id)) .. ", " .. tostring(GetCityPopulation(id)) .. "\n")
+      end
+    end
   end
-  if GetRemainingUnits("AirBase") > 0 then
-    outfile:write("AirBase - " .. GetRemainingUnits("AirBase") .. "\n")
-  else
-    outfile:write("NO AirBase - do not try to place this!\n")
+
+  if GetDefconLevel() <= 1 then
+    outfile:write("\nYour silos with nukes (SiloID, nukecount):\n")
+    for id, unit in pairs(ud) do
+      if unit["team"] == teamid and unit["type"] == "Silo" and GetNukeCount(id) > 0 then
+        outfile:write(string.sub(tostring(id), 2, -2) .. ", " --[[ .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. ", " --]] .. tostring(GetNukeCount(id)) .. "\n")
+      end
+    end
   end
 
   outfile:flush()
@@ -124,6 +173,11 @@ function MTLTest()
           local chat = string.match(line, "^SendChat%(\"(.*)\"%)")
           if chat then
             SendChat(chat)
+          end
+
+          local z, x, v = string.match(line, "^LaunchNukeFromSilo%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)")
+          if z then
+            attemptNuke(z, x, v)
           end
 
           local a, b, c = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"(.*)\"%)")
