@@ -56,7 +56,7 @@ function attemptPlace(longitude, latitude, typename)
 end
 
 function attemptNuke(siloID, longitude, latitude)
-  local id = getThingByID(siloID, true)
+  local id = getThingByID("Silo", siloID, true)
   if id ~= nil then
     SetState(id, 0)
     SetActionTarget(id, null, longitude, latitude)
@@ -64,13 +64,15 @@ function attemptNuke(siloID, longitude, latitude)
   end
 end
 
-function getThingByID(idstr, mineOnly)
+function getThingByID(type, idstr, mineOnly)
   local ud = {}
   GetAllUnitData(ud)
   for id, unit in pairs(ud) do
     if string.sub(tostring(id), 2, -2) == idstr then
       if mineOnly == false or (mineOnly == true and unit["team"] == GetOwnTeamID()) then
-        return id
+        if type == nil or (type ~= nil and unit["type"] == type) then
+          return id
+        end
       end
     end
   end
