@@ -279,6 +279,77 @@ server.tool(
   }
 );
 
+// Place fleet tool
+server.tool(
+  "place-fleet", "Places a fleet of ships at the specified coordinates. You can specify up to 6 ships. IMPORTANT: Check the response to verify if placement was successful!",
+  { 
+    longitude: z.number().describe("Longitude coordinate for fleet placement (-180 to 180)"), 
+    latitude: z.number().describe("Latitude coordinate for fleet placement (-90 to 90)"), 
+    ship1: z.enum(["Sub", "Carrier", "BattleShip"]).describe("Type of first ship to place"),
+    ship2: z.enum(["Sub", "Carrier", "BattleShip"]).optional().describe("Type of second ship to place"),
+    ship3: z.enum(["Sub", "Carrier", "BattleShip"]).optional().describe("Type of third ship to place"),
+    ship4: z.enum(["Sub", "Carrier", "BattleShip"]).optional().describe("Type of fourth ship to place"),
+    ship5: z.enum(["Sub", "Carrier", "BattleShip"]).optional().describe("Type of fifth ship to place"),
+    ship6: z.enum(["Sub", "Carrier", "BattleShip"]).optional().describe("Type of sixth ship to place"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification (faster for batch operations)")
+  },
+  async ({ longitude, latitude, ship1, ship2, ship3, ship4, ship5, ship6, correlationId, skipVerification }) => {
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    // Build the command with only the ships that were provided
+    let ships = [ship1];
+    if (ship2) ships.push(ship2);
+    if (ship3) ships.push(ship3);
+    if (ship4) ships.push(ship4);
+    if (ship5) ships.push(ship5);
+    if (ship6) ships.push(ship6);
+    
+    let shipsStr = ships.map(ship => `"${ship}"`).join(", ");
+    let command = `PlaceFleet(${longitude}, ${latitude}, ${shipsStr}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    if (!success) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: "Failed to place fleet" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Skip verification if requested
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Fleet placement attempted at ${longitude}, ${latitude} with ships: ${ships.join(", ")} and correlation ID: ${correlationId}\n\nVerification skipped. Use get-command-results tool to check the result later.`
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Wait a short time for the game to process the command
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if the command was successful
+    const result = await getCommandResult(correlationId);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: `Fleet placement ${result.found ? (result.success ? "succeeded" : "failed") : "attempted"} at ${longitude}, ${latitude} with ships: ${ships.join(", ")} and correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nIMPORTANT: You must use the get-command-results tool to verify if this placement was successful!"}`
+      }],
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
+    };
+  }
+);
+
 // Launch nuke tool
 server.tool(
   "launch-nuke", "Launches a nuclear missile from a specified silo to target coordinates. IMPORTANT: Check the response to verify if launch was successful!",
