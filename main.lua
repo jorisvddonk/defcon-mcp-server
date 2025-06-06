@@ -51,7 +51,9 @@ end
 
 function attemptFleet(longitude, latitude, type1, type2, type3, type4, type5, type6)
   local a = IsValidPlacementLocation(longitude, latitude, "Sub")
+  local success = false
   if a == true then
+    success = true
     DebugLog("Valid placement (Fleet): " .. longitude .. " / " .. latitude)
     local t1 = ensureIsShipType(type1)
     local t2 = ensureIsShipType(type2)
@@ -88,21 +90,24 @@ function attemptFleet(longitude, latitude, type1, type2, type3, type4, type5, ty
     WhiteboardDraw(longitude-0.5, latitude, longitude+0.5, latitude)
     WhiteboardDraw(longitude, latitude+0.5, longitude, latitude-0.5)
   end
+  return success
 end
 
 function attemptPlace(longitude, latitude, typename)
   if typename ~= "RadarStation" and typename ~= "Silo" and typename ~= "AirBase" then
     DebugLog("Attempting to place structure, but typename provided is not supported!")
-    return
+    return false
   end
   local a = IsValidPlacementLocation(longitude, latitude, typename)
   if a == true then
     DebugLog("Valid placement (" .. typename .. "): " .. longitude .. " / " .. latitude)
     PlaceStructure(longitude, latitude, typename)
+    return true
   else
     --DebugLog("Invalid placement")
     WhiteboardDraw(longitude-0.5, latitude-0.5, longitude+0.5, latitude+0.5)
     WhiteboardDraw(longitude-0.5, latitude+0.5, longitude+0.5, latitude-0.5)
+    return false
   end
 end
 
@@ -112,14 +117,18 @@ function attemptNuke(siloID, longitude, latitude)
     SetState(id, 0)
     SetActionTarget(id, null, longitude, latitude)
     WhiteboardDraw(GetLongitude(id), GetLatitude(id), longitude, latitude)
+    return true
   end
+  return false
 end
 
 function attemptDefensiveSilo(siloID, longitude, latitude)
   local id = getThingByID("Silo", siloID, true)
   if id ~= nil then
     SetState(id, 1)
+    return true
   end
+  return false
 end
 
 function ensureIsShipType(type)
@@ -251,49 +260,68 @@ function MTLTest()
 
           local chat = string.match(line, "^SendChat%(\"(.*)\"%)")
           if chat then
+            DebugLog(chat)
             SendChat(chat)
           end
 
           local z, x, v = string.match(line, "^LaunchNukeFromSilo%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)")
           if z then
-            attemptNuke(z, x, v)
+            local success = attemptNuke(z, x, v)
+            outfile:write("Command result: LaunchNukeFromSilo(" .. z .. ", " .. x .. ", " .. v .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
 
           local d = string.match(line, "^StopLaunchingNukesFromSiloAndGoDefensive%(([0-9]*)%)")
           if d then
-            attemptDefensiveSilo(d)
+            local success = attemptDefensiveSilo(d)
+            outfile:write("Command result: StopLaunchingNukesFromSiloAndGoDefensive(" .. d .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
 
           -- note: below command also allows non-quoted types, as that's a common LLM mistake.
           local a, b, c = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
           if a then
-            attemptPlace(a, b, c)
+            local success = attemptPlace(a, b, c)
+            outfile:write("Command result: PlaceStructure(" .. a .. ", " .. b .. ", " .. c .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
 
           -- note: below command also allows non-quoted types, as that's a common LLM mistake.
           local e, f, g, h, i, j, k, l = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
           if e then
-            attemptFleet(e, f, g, h, i, j, k, l)
+            local success = attemptFleet(e, f, g, h, i, j, k, l)
+            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ", " .. (k or "") .. ", " .. (l or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
           local e, f, g, h, i, j, k = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
           if e then
-            attemptFleet(e, f, g, h, i, j, k)
+            local success = attemptFleet(e, f, g, h, i, j, k)
+            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ", " .. (k or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
           local e, f, g, h, i, j = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
           if e then
-            attemptFleet(e, f, g, h, i, j)
+            local success = attemptFleet(e, f, g, h, i, j)
+            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
           local e, f, g, h, i = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
           if e then
-            attemptFleet(e, f, g, h, i)
+            local success = attemptFleet(e, f, g, h, i)
+            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
           local e, f, g, h = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
           if e then
-            attemptFleet(e, f, g, h)
+            local success = attemptFleet(e, f, g, h)
+            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
           local e, f, g = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
           if e then
-            attemptFleet(e, f, g)
+            local success = attemptFleet(e, f, g)
+            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            outfile:flush()
           end
         end
       end
