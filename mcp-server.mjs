@@ -5,10 +5,12 @@ import express from "express";
 import fs from "fs";
 import { z } from "zod";
 import { randomUUID } from "crypto";
+import os from "os";
 
-// Constants for file paths
-const INPUTFILE = "R:\\input.txt";
-const OUTPUTFILE = "R:\\output.txt";
+// Constants for file paths - platform specific
+const isWindows = os.platform() === 'win32';
+const INPUTFILE = isWindows ? "R:\\input.txt" : "/mnt/r/input.txt";
+const OUTPUTFILE = isWindows ? "R:\\output.txt" : "/mnt/r/output.txt";
 
 // Game state tracking
 let lastGameState = "";
