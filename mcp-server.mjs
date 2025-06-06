@@ -6,6 +6,8 @@ import fs from "fs";
 import { z } from "zod";
 import { randomUUID } from "crypto";
 import os from "os";
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // Constants for file paths - platform specific
 const isWindows = os.platform() === 'win32';
@@ -28,7 +30,9 @@ const server = new McpServer({
 
 // Load the initial conversation settings
 try {
-  PROMPTFILE = JSON.parse(fs.readFileSync("./initial_convo.json").toString());
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  PROMPTFILE = JSON.parse(fs.readFileSync(join(__dirname, "initial_convo.json")).toString());
   updatePromptSetting();
 } catch (error) {
   console.error("Failed to load initial_convo.json:", error);
