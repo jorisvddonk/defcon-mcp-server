@@ -51,8 +51,9 @@ end
 
 function attemptFleet(longitude, latitude, type1, type2, type3, type4, type5, type6)
   local a = IsValidPlacementLocation(longitude, latitude, "Sub")
+  local b = IsValidTerritory(GetOwnTeamID(), longitude, latitude, true)
   local success = false
-  if a == true then
+  if a == true and b == true then
     success = true
     DebugLog("Valid placement (Fleet): " .. longitude .. " / " .. latitude)
     local t1 = ensureIsShipType(type1)
@@ -99,7 +100,8 @@ function attemptPlace(longitude, latitude, typename)
     return false
   end
   local a = IsValidPlacementLocation(longitude, latitude, typename)
-  if a == true then
+  local b = IsValidTerritory(GetOwnTeamID(), longitude, latitude, false)
+  if a == true and b == true then
     DebugLog("Valid placement (" .. typename .. "): " .. longitude .. " / " .. latitude)
     PlaceStructure(longitude, latitude, typename)
     return true
