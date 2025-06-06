@@ -264,63 +264,108 @@ function MTLTest()
             SendChat(chat)
           end
 
-          local z, x, v = string.match(line, "^LaunchNukeFromSilo%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)")
+          local z, x, v, corrid = string.match(line, "^LaunchNukeFromSilo%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)%s*%-%-%s*(%d+)$")
+          if not z then
+            z, x, v = string.match(line, "^LaunchNukeFromSilo%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)")
+          end
           if z then
             local success = attemptNuke(z, x, v)
-            outfile:write("Command result: LaunchNukeFromSilo(" .. z .. ", " .. x .. ", " .. v .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: LaunchNukeFromSilo(" .. z .. ", " .. x .. ", " .. v .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
 
-          local d = string.match(line, "^StopLaunchingNukesFromSiloAndGoDefensive%(([0-9]*)%)")
+          local d, corrid = string.match(line, "^StopLaunchingNukesFromSiloAndGoDefensive%(([0-9]*)%)%s*%-%-%s*(%d+)$")
+          if not d then
+            d = string.match(line, "^StopLaunchingNukesFromSiloAndGoDefensive%(([0-9]*)%)")
+          end
           if d then
             local success = attemptDefensiveSilo(d)
-            outfile:write("Command result: StopLaunchingNukesFromSiloAndGoDefensive(" .. d .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: StopLaunchingNukesFromSiloAndGoDefensive(" .. d .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
 
           -- note: below command also allows non-quoted types, as that's a common LLM mistake.
-          local a, b, c = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
+          local a, b, c, corrid = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)%s*%-%-%s*(%d+)$")
+          if not a then
+            a, b, c = string.match(line, "^PlaceStructure%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
+          end
           if a then
             local success = attemptPlace(a, b, c)
-            outfile:write("Command result: PlaceStructure(" .. a .. ", " .. b .. ", " .. c .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: PlaceStructure(" .. a .. ", " .. b .. ", " .. c .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
 
           -- note: below command also allows non-quoted types, as that's a common LLM mistake.
-          local e, f, g, h, i, j, k, l = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          local e, f, g, h, i, j, k, l, corrid = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)%s*%-%-%s*(%d+)$")
+          if not e then
+            e, f, g, h, i, j, k, l = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          end
           if e then
             local success = attemptFleet(e, f, g, h, i, j, k, l)
-            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ", " .. (k or "") .. ", " .. (l or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ", " .. (k or "") .. ", " .. (l or "") .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
-          local e, f, g, h, i, j, k = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          local e, f, g, h, i, j, k, corrid = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)%s*%-%-%s*(%d+)$")
+          if not e then
+            e, f, g, h, i, j, k = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          end
           if e then
             local success = attemptFleet(e, f, g, h, i, j, k)
-            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ", " .. (k or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ", " .. (k or "") .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
-          local e, f, g, h, i, j = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          local e, f, g, h, i, j, corrid = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)%s*%-%-%s*(%d+)$")
+          if not e then
+            e, f, g, h, i, j = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          end
           if e then
             local success = attemptFleet(e, f, g, h, i, j)
-            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ", " .. (j or "") .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
-          local e, f, g, h, i = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          local e, f, g, h, i, corrid = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)%s*%-%-%s*(%d+)$")
+          if not e then
+            e, f, g, h, i = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          end
           if e then
             local success = attemptFleet(e, f, g, h, i)
-            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ", " .. (i or "") .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
-          local e, f, g, h = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          local e, f, g, h, corrid = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)%s*%-%-%s*(%d+)$")
+          if not e then
+            e, f, g, h = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?, \"?([a-zA-Z]*)\"?%)")
+          end
           if e then
             local success = attemptFleet(e, f, g, h)
-            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ", " .. (h or "") .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
-          local e, f, g = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
+          local e, f, g, corrid = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)%s*%-%-%s*(%d+)$")
+          if not e then
+            e, f, g = string.match(line, "^PlaceFleet%(([0-9.-]*), ([0-9.-]*), \"?([a-zA-Z]*)\"?%)")
+          end
           if e then
             local success = attemptFleet(e, f, g)
-            outfile:write("Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ") - " .. (success and "SUCCESS" or "FAILED") .. "\n")
+            local result = "Command result: PlaceFleet(" .. e .. ", " .. f .. ", " .. (g or "") .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
             outfile:flush()
           end
         end
