@@ -14,6 +14,35 @@ This is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introdu
 8. Configure your MCP-enabled LLM interface to start the MCP server via `npm run start` (for stdio transport) or `npm run start:http` (for HTTP transport).
 9. Watch the carnage unfold!
 
+## Architecture
+
+The DEFCON MCP Server uses a multi-layered architecture to enable AI-powered gameplay:
+
+1. **Game Layer**: DEFCON game running with the AI API extension
+2. **Lua Bridge**: A Lua bot (`main.lua`) that interfaces with the game through the DEFCON AI API
+3. **File I/O Layer**: Communication between the Lua bot and MCP server via text files
+   - `input.txt`: Commands from MCP server to the game
+   - `output.txt`: Game state information from the game to the MCP server
+4. **MCP Server Layer**: Node.js server (`mcp-server.mjs`) implementing the Model Context Protocol
+   - Provides standardized tools, resources, and prompts for LLM interaction
+   - Supports both stdio and HTTP transport methods
+5. **LLM Integration Layer**: Your AI tool connects to the MCP server to analyze game state and issue commands
+
+### Data Flow
+
+1. The Lua bot reads the game state and writes it to `output.txt`
+2. The MCP server reads `output.txt` to get the current game state
+3. The LLM analyzes the game state and decides on actions
+4. The MCP server writes commands to `input.txt`
+5. The Lua bot reads `input.txt` and executes commands in the game
+
+### Command Correlation
+
+The system uses correlation IDs to track command execution:
+- Each command sent to the game includes a unique ID
+- Command results are tagged with the same ID
+- This allows the MCP server to verify if commands were executed successfully
+
 ## Available MCP Tools
 
 The MCP server provides the following tools:
