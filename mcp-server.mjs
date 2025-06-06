@@ -169,9 +169,10 @@ server.tool(
     longitude: z.number().describe("Longitude coordinate for structure placement (-180 to 180)"), 
     latitude: z.number().describe("Latitude coordinate for structure placement (-90 to 90)"), 
     type: z.enum(["RadarStation", "Silo", "AirBase"]).describe("Type of structure to place"),
-    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification (faster for batch operations)")
   },
-  async ({ longitude, latitude, type, correlationId }) => {
+  async ({ longitude, latitude, type, correlationId, skipVerification }) => {
     // Auto-generate correlation ID if not provided
     if (correlationId === undefined) {
       correlationId = ++lastCorrelationId;
@@ -185,6 +186,17 @@ server.tool(
         content: [{ 
           type: "text", 
           text: "Failed to place structure" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Skip verification if requested
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Structure placement attempted: ${type} at ${longitude}, ${latitude} with correlation ID: ${correlationId}\n\nVerification skipped. Use get-command-results tool to check the result later.`
         }],
         correlationId: correlationId
       };
@@ -268,9 +280,10 @@ server.tool(
     siloId: z.string().describe("ID of the silo to launch the nuke from"), 
     targetLongitude: z.number().describe("Target longitude coordinate for the nuclear strike"), 
     targetLatitude: z.number().describe("Target latitude coordinate for the nuclear strike"),
-    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification (faster for batch operations)")
   },
-  async ({ siloId, targetLongitude, targetLatitude, correlationId }) => {
+  async ({ siloId, targetLongitude, targetLatitude, correlationId, skipVerification }) => {
     // Auto-generate correlation ID if not provided
     if (correlationId === undefined) {
       correlationId = ++lastCorrelationId;
@@ -284,6 +297,17 @@ server.tool(
         content: [{ 
           type: "text", 
           text: "Failed to launch nuke" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Skip verification if requested
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Nuke launch attempted from silo ${siloId} to (${targetLongitude}, ${targetLatitude}) with correlation ID: ${correlationId}\n\nVerification skipped. Use get-command-results tool to check the result later.`
         }],
         correlationId: correlationId
       };
@@ -311,9 +335,10 @@ server.tool(
   "set-silo-defensive", "Sets a silo to defensive mode to shoot down incoming nuclear missiles. IMPORTANT: Check the response to verify if the command was successful!",
   { 
     siloId: z.string().describe("ID of the silo to set to defensive mode"),
-    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification (faster for batch operations)")
   },
-  async ({ siloId, correlationId }) => {
+  async ({ siloId, correlationId, skipVerification }) => {
     // Auto-generate correlation ID if not provided
     if (correlationId === undefined) {
       correlationId = ++lastCorrelationId;
@@ -327,6 +352,17 @@ server.tool(
         content: [{ 
           type: "text", 
           text: "Failed to set silo to defensive mode" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Skip verification if requested
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Silo ${siloId} attempted to set to defensive mode with correlation ID: ${correlationId}\n\nVerification skipped. Use get-command-results tool to check the result later.`
         }],
         correlationId: correlationId
       };
@@ -383,7 +419,7 @@ async function getCommandResult(correlationId) {
 
 // Get command results by correlation IDs tool
 server.tool(
-  "get-command-results", "Retrieves the results of previously executed commands by their correlation IDs",
+  "get-command-results", "Retrieves the results of previously executed commands by their correlation IDs. Use this to check results when skipVerification=true was used.",
   { correlationIds: z.array(z.number()).describe("List of correlation IDs to retrieve results for") },
   async ({ correlationIds }) => {
     try {
