@@ -57,13 +57,25 @@ async function readGameState() {
     const stats = await fs.promises.stat(OUTPUTFILE);
     const fileContent = await fs.promises.readFile(OUTPUTFILE, 'utf8');
     
-    // Extract DEFCON level
-    const match = fileContent.match(/DEFCON level: (\d+)/);
-    if (match) {
-      defconLevel = parseInt(match[1]);
-      updatePromptSetting();
+    // Extract the latest game state between the last occurrence of start and end markers
+    const lastStartIndex = fileContent.lastIndexOf("-- game state info start --:");
+    const lastEndIndex = fileContent.lastIndexOf("-- game state info end --:");
+    
+    if (lastStartIndex !== -1 && lastEndIndex !== -1 && lastStartIndex < lastEndIndex) {
+      const latestGameState = fileContent.substring(lastStartIndex, lastEndIndex + "-- game state info end --:".length);
+      
+      // Extract DEFCON level
+      const match = latestGameState.match(/DEFCON level: (\d+)/);
+      if (match) {
+        defconLevel = parseInt(match[1]);
+        updatePromptSetting();
+      }
+      
+      lastGameState = latestGameState;
+      return latestGameState;
     }
     
+    // If no markers found, return the whole content (fallback)
     lastGameState = fileContent;
     return fileContent;
   } catch (error) {
@@ -582,6 +594,32 @@ server.tool(
         content: [{ 
           type: "text", 
           text: `Error retrieving command results: ${error.message}` 
+        }],
+        isError: true
+      };
+    }
+  }
+);
+
+// Get latest game state tool
+server.tool(
+  "get-game-state", "Retrieves the latest game state information",
+  {}, // No parameters needed
+  async () => {
+    try {
+      const gameState = await readGameState();
+      
+      return {
+        content: [{ 
+          type: "text", 
+          text: gameState
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Error retrieving game state: ${error.message}` 
         }],
         isError: true
       };
