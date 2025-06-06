@@ -429,13 +429,13 @@ async function startServer() {
     
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log(`DEFCON MCP Server listening on port ${PORT}`);
+      log(`DEFCON MCP Server listening on port ${PORT}`);
     });
   } else {
     // Default to stdio transport
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.log("DEFCON MCP Server started with stdio transport");
+    log("DEFCON MCP Server started with stdio transport");
   }
 }
 
@@ -443,3 +443,11 @@ startServer().catch(error => {
   console.error("Failed to start MCP server:", error);
   process.exit(1);
 });
+
+function log(message) {
+  // log to standard ERROR
+  if (typeof message !== 'string') {
+    message = JSON.stringify(message);
+  }
+  //console.error(`[Defcon MCP Server] ${message}`);
+}
