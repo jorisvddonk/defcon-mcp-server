@@ -5,6 +5,8 @@ local outfile
 local offset = 0
 local getStateNext = true
 local test = false
+local eventCounter = 0
+local events = {}
 
 -- Required by luabot binding.
 function OnInit()
@@ -37,7 +39,49 @@ function OnTick()
 end
 
 function OnEvent (eventtype, sourceID, targetID, unittype, longitude, latitude)
-  DebugLog("--- GOT AN EVENT ---")
+  DebugLog("Event: " .. eventtype)
+  
+  -- Get actual unit types for source and target
+  local sourceType = "Unknown"
+  local targetType = "Unknown"
+  
+  -- Try to get source type
+  if sourceID ~= nil then
+    local sourceTypeCheck = GetUnitType(sourceID)
+    if sourceTypeCheck then
+      sourceType = sourceTypeCheck
+    end
+  end
+  
+  -- Try to get target type
+  if targetID ~= nil then
+    local targetTypeCheck = GetUnitType(targetID)
+    if targetTypeCheck then
+      targetType = targetTypeCheck
+    end
+  end
+  
+  -- Increment event counter and store event
+  eventCounter = eventCounter + 1
+  local event = {
+    id = eventCounter,
+    type = eventtype,
+    source = tostring(sourceID),
+    sourceType = sourceType,
+    target = tostring(targetID),
+    targetType = targetType,
+    longitude = tostring(longitude),
+    latitude = tostring(latitude),
+    time = GetGameTime()
+  }
+  events[eventCounter] = event
+  
+  -- Write event to output file for MCP server
+  outfile:write("Event: " .. eventCounter .. ", " .. eventtype .. 
+                ", Source: " .. tostring(sourceID) .. " (" .. sourceType .. ")" ..
+                ", Target: " .. tostring(targetID) .. " (" .. targetType .. ")" ..
+                ", Location: " .. tostring(longitude) .. ", " .. tostring(latitude) .. "\n")
+  outfile:flush()
 end
 
 function PlaceFleetAngle(longitude, latitude, type, angle)
@@ -133,6 +177,33 @@ function attemptDefensiveSilo(siloID, longitude, latitude)
   return false
 end
 
+function attemptSetAirUnitTarget(unitID, targetID, longitude, latitude)
+  local id = getThingByID(nil, unitID, true)
+  if id ~= nil then
+    SetActionTarget(id, targetID, longitude, latitude)
+    return true
+  end
+  return false
+end
+
+function attemptSetAirUnitLanding(unitID, targetID)
+  local id = getThingByID(nil, unitID, true)
+  if id ~= nil then
+    SetLandingTarget(id, targetID)
+    return true
+  end
+  return false
+end
+
+function attemptSetSubmarineState(unitID, state)
+  local id = getThingByID("Sub", unitID, true)
+  if id ~= nil then
+    SetState(id, state)
+    return true
+  end
+  return false
+end
+
 function ensureIsShipType(type)
   if type == "Sub" or type == "Carrier" or type == "BattleShip" then
     DebugLog("Yep, it's good: " .. type)
@@ -162,9 +233,13 @@ function GetGameState()
   local ud = {}
   local a, b
   GetAllUnitData(ud)
+  
+  -- Include event counter in game state
+  local totalEvents = eventCounter
 
   outfile:write("\n-- game state info start --:\n")
-  outfile:write("\nDEFCON level: " .. defcon .. "\n\n")
+  outfile:write("\nDEFCON level: " .. defcon .. "\n")
+  outfile:write("Total events: " .. totalEvents .. "\n\n")
 
   outfile:write("\nYour units and buildings currently on the map (id, typename, longitude, latitude):\n")
   for id, unit in pairs(ud) do
@@ -420,6 +495,112 @@ function MTLTest()
             outfile:write(result .. "\n")
             outfile:flush()
           end
+          
+          local unitId, targetId, x, y, corrid = string.match(line, "^SetAirUnitTarget%(([0-9]*), ([0-9]*), ([0-9.-]*), ([0-9.-]*)%)%s*%-%-%s*(%d+)$")
+          if not unitId then
+            unitId, targetId, x, y = string.match(line, "^SetAirUnitTarget%(([0-9]*), ([0-9]*), ([0-9.-]*), ([0-9.-]*)%)")
+          end
+          if unitId then
+            local success = attemptSetAirUnitTarget(unitId, targetId, x, y)
+            local result = "Command result: SetAirUnitTarget(" .. unitId .. ", " .. targetId .. ", " .. x .. ", " .. y .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+          local unitId, targetId, corrid = string.match(line, "^SetAirUnitLanding%(([0-9]*), ([0-9]*)%)%s*%-%-%s*(%d+)$")
+          if not unitId then
+            unitId, targetId = string.match(line, "^SetAirUnitLanding%(([0-9]*), ([0-9]*)%)")
+          end
+          if unitId then
+            local success = attemptSetAirUnitLanding(unitId, targetId)
+            local result = "Command result: SetAirUnitLanding(" .. unitId .. ", " .. targetId .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+          local unitId, state, corrid = string.match(line, "^SetSubmarineState%(([0-9]*), ([0-2])%)%s*%-%-%s*(%d+)$")
+          if not unitId then
+            unitId, state = string.match(line, "^SetSubmarineState%(([0-9]*), ([0-2])%)")
+          end
+          if unitId then
+            local success = attemptSetSubmarineState(unitId, state)
+            local result = "Command result: SetSubmarineState(" .. unitId .. ", " .. state .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+          local teamId, corrid = string.match(line, "^RequestCeaseFire%(([0-9]*)%)%s*%-%-%s*(%d+)$")
+          if not teamId then
+            teamId = string.match(line, "^RequestCeaseFire%(([0-9]*)%)")
+          end
+          if teamId then
+            local teamId_obj = getThingByID(nil, teamId, false)
+            local success = false
+            if teamId_obj then
+              RequestCeaseFire(teamId_obj)
+              success = true
+            end
+            local result = "Command result: RequestCeaseFire(" .. teamId .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+          local teamId, corrid = string.match(line, "^RequestShareRadar%(([0-9]*)%)%s*%-%-%s*(%d+)$")
+          if not teamId then
+            teamId = string.match(line, "^RequestShareRadar%(([0-9]*)%)")
+          end
+          if teamId then
+            local teamId_obj = getThingByID(nil, teamId, false)
+            local success = false
+            if teamId_obj then
+              RequestShareRadar(teamId_obj)
+              success = true
+            end
+            local result = "Command result: RequestShareRadar(" .. teamId .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+          local allianceId, corrid = string.match(line, "^RequestAlliance%(([0-9]*)%)%s*%-%-%s*(%d+)$")
+          if not allianceId then
+            allianceId = string.match(line, "^RequestAlliance%(([0-9]*)%)")
+          end
+          if allianceId then
+            local allianceId_obj = getThingByID(nil, allianceId, false)
+            local success = false
+            if allianceId_obj then
+              RequestAlliance(allianceId_obj)
+              success = true
+            end
+            local result = "Command result: RequestAlliance(" .. allianceId .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+          local eventId, inFavor, corrid = string.match(line, "^SendVote%(([0-9]*), ([a-z]*)%)%s*%-%-%s*(%d+)$")
+          if not eventId then
+            eventId, inFavor = string.match(line, "^SendVote%(([0-9]*), ([a-z]*)%)")
+          end
+          if eventId then
+            local eventId_obj = getThingByID(nil, eventId, false)
+            local success = false
+            if eventId_obj then
+              SendVote(eventId_obj, inFavor == "true")
+              success = true
+            end
+            local result = "Command result: SendVote(" .. eventId .. ", " .. inFavor .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+
         end
       end
     end

@@ -126,6 +126,94 @@ server.resource(
   }
 );
 
+// Fleet information resource
+server.resource(
+  "fleet-info",
+  "defcon://fleet-info",
+  async (uri) => {
+    const gameState = await readGameState();
+    // Extract fleet information from game state
+    const fleetInfoMatch = gameState.match(/Your fleets \(FleetID, ships with IDs and locations\):\n([\s\S]*?)(?:\n\n|$)/);
+    const fleetInfo = fleetInfoMatch ? fleetInfoMatch[1] : "No fleet information available";
+    
+    return {
+      contents: [{
+        uri: uri.href,
+        text: fleetInfo
+      }]
+    };
+  }
+);
+
+// Air unit information resource
+server.resource(
+  "air-units",
+  "defcon://air-units",
+  async (uri) => {
+    const gameState = await readGameState();
+    // Extract air unit information from game state
+    const airUnitInfo = gameState.match(/Your units and buildings[\s\S]*?((?:Bomber|Fighter)[\s\S]*?)(?:\n\n|$)/);
+    const airUnits = airUnitInfo ? airUnitInfo[1] : "No air units available";
+    
+    return {
+      contents: [{
+        uri: uri.href,
+        text: airUnits
+      }]
+    };
+  }
+);
+
+// Game events resource
+server.resource(
+  "events",
+  "defcon://events/:fromId?",
+  async (uri) => {
+    const fromId = parseInt(uri.pathname.split('/')[2] || 0);
+    
+    try {
+      const gameState = await fs.promises.readFile(OUTPUTFILE, 'utf8');
+      const eventRegex = /Event: (\d+), ([^,]+), Source: ([^(]+) \(([^)]+)\), Target: ([^(]+) \(([^)]+)\), Location: ([^,]+), ([^,\n]+)/g;
+      
+      const events = [];
+      let match;
+      while ((match = eventRegex.exec(gameState)) !== null) {
+        const eventId = parseInt(match[1]);
+        if (eventId > fromId) {
+          events.push({
+            id: eventId,
+            type: match[2],
+            source: match[3].trim(),
+            sourceType: match[4],
+            target: match[5].trim(),
+            targetType: match[6],
+            longitude: match[7],
+            latitude: match[8]
+          });
+        }
+      }
+      
+      const eventsText = events.length > 0 ? 
+        events.map(e => `Event ${e.id}: ${e.type}, Source: ${e.source} (${e.sourceType}), Target: ${e.target} (${e.targetType}), Location: ${e.longitude}, ${e.latitude}`).join('\n') : 
+        "No events found";
+      
+      return {
+        contents: [{
+          uri: uri.href,
+          text: `Events after ID ${fromId}:\n\n${eventsText}`
+        }]
+      };
+    } catch (error) {
+      return {
+        contents: [{
+          uri: uri.href,
+          text: `Error retrieving events: ${error.message}`
+        }]
+      };
+    }
+  }
+);
+
 // MCP Tools
 
 // Debug log tool
@@ -531,6 +619,152 @@ server.tool(
   }
 );
 
+// Set air unit target tool
+server.tool(
+  "set-air-target", "Sets the target for an air unit (bomber or fighter)",
+  { 
+    unitId: z.string().describe("ID of the air unit"),
+    targetId: z.string().optional().describe("ID of the target unit (if targeting a unit)"),
+    longitude: z.number().optional().describe("Target longitude coordinate (if targeting a location)"),
+    latitude: z.number().optional().describe("Target latitude coordinate (if targeting a location)"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification")
+  },
+  async ({ unitId, targetId, longitude, latitude, correlationId, skipVerification }) => {
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `SetAirUnitTarget(${unitId}, ${targetId || "nil"}, ${longitude || 0}, ${latitude || 0}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    if (!success) {
+      return {
+        content: [{ type: "text", text: "Failed to set air unit target" }],
+        correlationId: correlationId
+      };
+    }
+    
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Air unit ${unitId} target setting attempted with correlation ID: ${correlationId}\n\nVerification skipped.`
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const result = await getCommandResult(correlationId);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: `Air unit ${unitId} target ${result.found ? (result.success ? "successfully set" : "failed to set") : "attempted to set"} with correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nUse get-command-results to verify success."}`
+      }],
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
+    };
+  }
+);
+
+// Set air unit landing tool
+server.tool(
+  "set-air-landing", "Sets the landing target for an air unit",
+  { 
+    unitId: z.string().describe("ID of the air unit"),
+    targetId: z.string().describe("ID of the landing target (airbase or carrier)"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification")
+  },
+  async ({ unitId, targetId, correlationId, skipVerification }) => {
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `SetAirUnitLanding(${unitId}, ${targetId}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    if (!success) {
+      return {
+        content: [{ type: "text", text: "Failed to set air unit landing target" }],
+        correlationId: correlationId
+      };
+    }
+    
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Air unit ${unitId} landing target setting attempted with correlation ID: ${correlationId}\n\nVerification skipped.`
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const result = await getCommandResult(correlationId);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: `Air unit ${unitId} landing target ${result.found ? (result.success ? "successfully set" : "failed to set") : "attempted to set"} with correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nUse get-command-results to verify success."}`
+      }],
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
+    };
+  }
+);
+
+// Set submarine state tool
+server.tool(
+  "set-submarine-state", "Sets the state of a submarine (passive sonar, active sonar, or nuke)",
+  { 
+    unitId: z.string().describe("ID of the submarine"),
+    state: z.number().min(0).max(2).describe("State to set (0: passive sonar, 1: active sonar, 2: nuke)"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification")
+  },
+  async ({ unitId, state, correlationId, skipVerification }) => {
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `SetSubmarineState(${unitId}, ${state}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    if (!success) {
+      return {
+        content: [{ type: "text", text: "Failed to set submarine state" }],
+        correlationId: correlationId
+      };
+    }
+    
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Submarine ${unitId} state setting attempted with correlation ID: ${correlationId}\n\nVerification skipped.`
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const result = await getCommandResult(correlationId);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: `Submarine ${unitId} state ${result.found ? (result.success ? "successfully set" : "failed to set") : "attempted to set"} with correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nUse get-command-results to verify success."}`
+      }],
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
+    };
+  }
+);
+
 // Helper function to check command results
 async function getCommandResult(correlationId) {
   try {
@@ -658,6 +892,155 @@ server.tool(
         isError: true
       };
     }
+  }
+);
+
+// Get events tool
+server.tool(
+  "get-events", "Retrieves all game events after the specified event ID",
+  { 
+    fromId: z.number().describe("Event ID to start from (returns all events with ID > fromId)")
+  },
+  async ({ fromId }) => {
+    try {
+      const gameState = await fs.promises.readFile(OUTPUTFILE, 'utf8');
+      const eventRegex = /Event: (\d+), ([^,]+), Source: ([^(]+) \(([^)]+)\), Target: ([^(]+) \(([^)]+)\), Location: ([^,]+), ([^,\n]+)/g;
+      
+      const events = [];
+      let match;
+      while ((match = eventRegex.exec(gameState)) !== null) {
+        const eventId = parseInt(match[1]);
+        if (eventId > fromId) {
+          events.push({
+            id: eventId,
+            type: match[2],
+            source: match[3].trim(),
+            sourceType: match[4],
+            target: match[5].trim(),
+            targetType: match[6],
+            longitude: match[7],
+            latitude: match[8]
+          });
+        }
+      }
+      
+      return {
+        content: [{ 
+          type: "text", 
+          text: events.length > 0 ? 
+            `Events after ID ${fromId}:\n\n${events.map(e => 
+              `Event ${e.id}: ${e.type}, Source: ${e.source} (${e.sourceType}), Target: ${e.target} (${e.targetType}), Location: ${e.longitude}, ${e.latitude}`
+            ).join('\n')}` : 
+            `No events found after ID ${fromId}`
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Error retrieving events: ${error.message}` 
+        }],
+        isError: true
+      };
+    }
+  }
+);
+
+// Diplomatic tools
+server.tool(
+  "request-cease-fire", "Requests a cease fire with another team",
+  { 
+    teamId: z.string().describe("ID of the team to request cease fire with"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
+  },
+  async ({ teamId, correlationId }) => {
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `RequestCeaseFire(${teamId}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: success ? `Cease fire request sent to team ${teamId} with correlation ID: ${correlationId}` : "Failed to send cease fire request" 
+      }],
+      correlationId: correlationId
+    };
+  }
+);
+
+server.tool(
+  "request-share-radar", "Requests radar sharing with another team",
+  { 
+    teamId: z.string().describe("ID of the team to request radar sharing with"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
+  },
+  async ({ teamId, correlationId }) => {
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `RequestShareRadar(${teamId}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: success ? `Radar sharing request sent to team ${teamId} with correlation ID: ${correlationId}` : "Failed to send radar sharing request" 
+      }],
+      correlationId: correlationId
+    };
+  }
+);
+
+server.tool(
+  "request-alliance", "Requests to join an alliance",
+  { 
+    allianceId: z.string().describe("ID of the alliance to request joining"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
+  },
+  async ({ allianceId, correlationId }) => {
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `RequestAlliance(${allianceId}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: success ? `Alliance request sent to alliance ${allianceId} with correlation ID: ${correlationId}` : "Failed to send alliance request" 
+      }],
+      correlationId: correlationId
+    };
+  }
+);
+
+server.tool(
+  "send-vote", "Sends a vote for a game event",
+  { 
+    eventId: z.string().describe("ID of the event to vote on"),
+    inFavor: z.boolean().describe("Whether to vote in favor (true) or against (false)"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
+  },
+  async ({ eventId, inFavor, correlationId }) => {
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `SendVote(${eventId}, ${inFavor ? "true" : "false"}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: success ? `Vote sent for event ${eventId} (${inFavor ? "in favor" : "against"}) with correlation ID: ${correlationId}` : "Failed to send vote" 
+      }],
+      correlationId: correlationId
+    };
   }
 );
 
