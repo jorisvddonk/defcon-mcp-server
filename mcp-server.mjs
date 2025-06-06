@@ -112,14 +112,20 @@ server.resource(
 // Debug log tool
 server.tool(
   "debug-log",
-  { message: z.string() },
-  async ({ message }) => {
-    const command = `DebugLog("${message}")`;
+  { 
+    message: z.string(),
+    correlationId: z.number().optional()
+  },
+  async ({ message, correlationId }) => {
+    let command = `DebugLog("${message}")`;
+    if (correlationId !== undefined) {
+      command += ` -- ${correlationId}`;
+    }
     const success = writeCommandToGame(command);
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Debug log sent: ${message}` : "Failed to send debug log" 
+        text: success ? `Debug log sent: ${message}${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to send debug log" 
       }]
     };
   }
@@ -128,14 +134,20 @@ server.tool(
 // Send chat message tool
 server.tool(
   "send-chat",
-  { message: z.string() },
-  async ({ message }) => {
-    const command = `SendChat("${message}")`;
+  { 
+    message: z.string(),
+    correlationId: z.number().optional()
+  },
+  async ({ message, correlationId }) => {
+    let command = `SendChat("${message}")`;
+    if (correlationId !== undefined) {
+      command += ` -- ${correlationId}`;
+    }
     const success = writeCommandToGame(command);
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Chat message sent: ${message}` : "Failed to send chat message" 
+        text: success ? `Chat message sent: ${message}${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to send chat message" 
       }]
     };
   }
@@ -147,15 +159,19 @@ server.tool(
   { 
     longitude: z.number(), 
     latitude: z.number(), 
-    type: z.enum(["RadarStation", "Silo", "AirBase"])
+    type: z.enum(["RadarStation", "Silo", "AirBase"]),
+    correlationId: z.number().optional()
   },
-  async ({ longitude, latitude, type }) => {
-    const command = `PlaceStructure(${longitude}, ${latitude}, "${type}")`;
+  async ({ longitude, latitude, type, correlationId }) => {
+    let command = `PlaceStructure(${longitude}, ${latitude}, "${type}")`;
+    if (correlationId !== undefined) {
+      command += ` -- ${correlationId}`;
+    }
     const success = writeCommandToGame(command);
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Structure placement attempted: ${type} at ${longitude}, ${latitude}` : "Failed to place structure" 
+        text: success ? `Structure placement attempted: ${type} at ${longitude}, ${latitude}${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to place structure" 
       }]
     };
   }
@@ -168,15 +184,19 @@ server.tool(
     longitude1: z.number(), 
     latitude1: z.number(), 
     longitude2: z.number(), 
-    latitude2: z.number() 
+    latitude2: z.number(),
+    correlationId: z.number().optional()
   },
-  async ({ longitude1, latitude1, longitude2, latitude2 }) => {
-    const command = `WhiteboardDraw(${longitude1}, ${latitude1}, ${longitude2}, ${latitude2})`;
+  async ({ longitude1, latitude1, longitude2, latitude2, correlationId }) => {
+    let command = `WhiteboardDraw(${longitude1}, ${latitude1}, ${longitude2}, ${latitude2})`;
+    if (correlationId !== undefined) {
+      command += ` -- ${correlationId}`;
+    }
     const success = writeCommandToGame(command);
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Whiteboard line drawn from (${longitude1}, ${latitude1}) to (${longitude2}, ${latitude2})` : "Failed to draw on whiteboard" 
+        text: success ? `Whiteboard line drawn from (${longitude1}, ${latitude1}) to (${longitude2}, ${latitude2})${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to draw on whiteboard" 
       }]
     };
   }
@@ -185,14 +205,19 @@ server.tool(
 // Whiteboard clear tool
 server.tool(
   "whiteboard-clear",
-  {},
-  async () => {
-    const command = "WhiteboardClear()";
+  {
+    correlationId: z.number().optional()
+  },
+  async ({ correlationId }) => {
+    let command = "WhiteboardClear()";
+    if (correlationId !== undefined) {
+      command += ` -- ${correlationId}`;
+    }
     const success = writeCommandToGame(command);
     return {
       content: [{ 
         type: "text", 
-        text: success ? "Whiteboard cleared" : "Failed to clear whiteboard" 
+        text: success ? `Whiteboard cleared${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to clear whiteboard" 
       }]
     };
   }
@@ -204,15 +229,19 @@ server.tool(
   { 
     siloId: z.string(), 
     targetLongitude: z.number(), 
-    targetLatitude: z.number() 
+    targetLatitude: z.number(),
+    correlationId: z.number().optional()
   },
-  async ({ siloId, targetLongitude, targetLatitude }) => {
-    const command = `LaunchNukeFromSilo(${siloId}, ${targetLongitude}, ${targetLatitude})`;
+  async ({ siloId, targetLongitude, targetLatitude, correlationId }) => {
+    let command = `LaunchNukeFromSilo(${siloId}, ${targetLongitude}, ${targetLatitude})`;
+    if (correlationId !== undefined) {
+      command += ` -- ${correlationId}`;
+    }
     const success = writeCommandToGame(command);
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Nuke launch attempted from silo ${siloId} to (${targetLongitude}, ${targetLatitude})` : "Failed to launch nuke" 
+        text: success ? `Nuke launch attempted from silo ${siloId} to (${targetLongitude}, ${targetLatitude})${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to launch nuke" 
       }]
     };
   }
@@ -221,14 +250,20 @@ server.tool(
 // Set silo to defensive mode tool
 server.tool(
   "set-silo-defensive",
-  { siloId: z.string() },
-  async ({ siloId }) => {
-    const command = `StopLaunchingNukesFromSiloAndGoDefensive(${siloId})`;
+  { 
+    siloId: z.string(),
+    correlationId: z.number().optional()
+  },
+  async ({ siloId, correlationId }) => {
+    let command = `StopLaunchingNukesFromSiloAndGoDefensive(${siloId})`;
+    if (correlationId !== undefined) {
+      command += ` -- ${correlationId}`;
+    }
     const success = writeCommandToGame(command);
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Silo ${siloId} set to defensive mode` : "Failed to set silo to defensive mode" 
+        text: success ? `Silo ${siloId} set to defensive mode${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to set silo to defensive mode" 
       }]
     };
   }
