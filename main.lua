@@ -385,6 +385,28 @@ function MTLTest()
             outfile:write(result .. "\n")
             outfile:flush()
           end
+          
+          local fleetId, x, y, corrid = string.match(line, "^MoveFleet%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)%s*%-%-%s*(%d+)$")
+          if not fleetId then
+            fleetId, x, y = string.match(line, "^MoveFleet%(([0-9]*), ([0-9.-]*), ([0-9.-]*)%)")
+          end
+          if fleetId then
+            local success = false
+            local fleetId_obj = getThingByID("Fleet", fleetId, true)
+            if fleetId_obj then
+              local fleet = GetFleetUnits(fleetId_obj)
+              if fleet then
+                for _, unitId in ipairs(fleet) do
+                  SetMovementTarget(unitId, x, y)
+                end
+                success = true
+              end
+            end
+            local result = "Command result: MoveFleet(" .. fleetId .. ", " .. x .. ", " .. y .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
         end
       end
     end

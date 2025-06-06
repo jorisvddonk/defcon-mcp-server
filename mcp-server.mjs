@@ -407,6 +407,63 @@ server.tool(
   }
 );
 
+// Move fleet tool
+server.tool(
+  "move-fleet", "Moves all ships in a fleet to the specified coordinates. IMPORTANT: Check the response to verify if the command was successful!",
+  { 
+    fleetId: z.string().describe("ID of the fleet to move"),
+    longitude: z.number().describe("Target longitude coordinate to move the fleet to"),
+    latitude: z.number().describe("Target latitude coordinate to move the fleet to"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result"),
+    skipVerification: z.boolean().optional().default(false).describe("Set to true to skip automatic verification (faster for batch operations)")
+  },
+  async ({ fleetId, longitude, latitude, correlationId, skipVerification }) => {
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
+    }
+    
+    let command = `MoveFleet(${fleetId}, ${longitude}, ${latitude}) -- ${correlationId}`;
+    const success = writeCommandToGame(command);
+    
+    if (!success) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: "Failed to move fleet" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Skip verification if requested
+    if (skipVerification) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Fleet ${fleetId} movement attempted to (${longitude}, ${latitude}) with correlation ID: ${correlationId}\n\nVerification skipped. Use get-command-results tool to check the result later.`
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Wait a short time for the game to process the command
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if the command was successful
+    const result = await getCommandResult(correlationId);
+    
+    return {
+      content: [{ 
+        type: "text", 
+        text: `Fleet ${fleetId} movement ${result.found ? (result.success ? "succeeded" : "failed") : "attempted"} to (${longitude}, ${latitude}) with correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nIMPORTANT: You must use the get-command-results tool to verify if this movement was successful!"}`
+      }],
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
+    };
+  }
+);
+
 // Set silo to defensive mode tool
 server.tool(
   "set-silo-defensive", "Sets a silo to defensive mode to shoot down incoming nuclear missiles. IMPORTANT: Check the response to verify if the command was successful!",
