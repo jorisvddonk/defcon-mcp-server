@@ -163,6 +163,7 @@ function GetGameState()
   local a, b
   GetAllUnitData(ud)
 
+  outfile:write("\n-- game state info start --:\n")
   outfile:write("\nDEFCON level: " .. defcon .. "\n\n")
 
   outfile:write("\nYour units and buildings currently on the map (id, typename, longitude, latitude):\n")
@@ -224,6 +225,8 @@ function GetGameState()
     end
   end
 
+  outfile:write("\n-- game state info end --:\n")
+
   outfile:flush()
 end
 
@@ -273,6 +276,18 @@ function MTLTest()
           if z then
             local success = attemptNuke(z, x, v)
             local result = "Command result: LaunchNukeFromSilo(" .. z .. ", " .. x .. ", " .. v .. ") - " .. (success and "SUCCESS" or "FAILED")
+            if corrid then result = result .. " [ID:" .. corrid .. "]" end
+            outfile:write(result .. "\n")
+            outfile:flush()
+          end
+          
+          local x1, y1, x2, y2, corrid = string.match(line, "^WhiteboardDraw%(([0-9.-]*), ([0-9.-]*), ([0-9.-]*), ([0-9.-]*)%)%s*%-%-%s*(%d+)$")
+          if not x1 then
+            x1, y1, x2, y2 = string.match(line, "^WhiteboardDraw%(([0-9.-]*), ([0-9.-]*), ([0-9.-]*), ([0-9.-]*)%)")
+          end
+          if x1 and y1 and x2 and y2 then
+            WhiteboardDraw(tonumber(x1), tonumber(y1), tonumber(x2), tonumber(y2))
+            local result = "Command result: WhiteboardDraw(" .. x1 .. ", " .. y1 .. ", " .. x2 .. ", " .. y2 .. ") - SUCCESS"
             if corrid then result = result .. " [ID:" .. corrid .. "]" end
             outfile:write(result .. "\n")
             outfile:flush()
