@@ -111,10 +111,10 @@ server.resource(
 
 // Debug log tool
 server.tool(
-  "debug-log",
+  "debug-log", "Logs a message to the game's debug console",
   { 
-    message: z.string(),
-    correlationId: z.number().optional()
+    message: z.string().describe("Message to log to the debug console"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ message, correlationId }) => {
     let command = `DebugLog("${message}")`;
@@ -133,10 +133,10 @@ server.tool(
 
 // Send chat message tool
 server.tool(
-  "send-chat",
+  "send-chat", "Sends a chat message visible to all players in the game",
   { 
-    message: z.string(),
-    correlationId: z.number().optional()
+    message: z.string().describe("Chat message to send to all players"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ message, correlationId }) => {
     let command = `SendChat("${message}")`;
@@ -155,12 +155,12 @@ server.tool(
 
 // Place structure tool
 server.tool(
-  "place-structure",
+  "place-structure", "Places a military structure (Silo, RadarStation, or AirBase) at the specified coordinates",
   { 
-    longitude: z.number(), 
-    latitude: z.number(), 
-    type: z.enum(["RadarStation", "Silo", "AirBase"]),
-    correlationId: z.number().optional()
+    longitude: z.number().describe("Longitude coordinate for structure placement (-180 to 180)"), 
+    latitude: z.number().describe("Latitude coordinate for structure placement (-90 to 90)"), 
+    type: z.enum(["RadarStation", "Silo", "AirBase"]).describe("Type of structure to place"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ longitude, latitude, type, correlationId }) => {
     let command = `PlaceStructure(${longitude}, ${latitude}, "${type}")`;
@@ -179,13 +179,13 @@ server.tool(
 
 // Whiteboard draw tool
 server.tool(
-  "whiteboard-draw",
+  "whiteboard-draw", "Draws a line on the game's whiteboard between two coordinate points",
   { 
-    longitude1: z.number(), 
-    latitude1: z.number(), 
-    longitude2: z.number(), 
-    latitude2: z.number(),
-    correlationId: z.number().optional()
+    longitude1: z.number().describe("Starting longitude coordinate for the line"), 
+    latitude1: z.number().describe("Starting latitude coordinate for the line"), 
+    longitude2: z.number().describe("Ending longitude coordinate for the line"), 
+    latitude2: z.number().describe("Ending latitude coordinate for the line"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ longitude1, latitude1, longitude2, latitude2, correlationId }) => {
     let command = `WhiteboardDraw(${longitude1}, ${latitude1}, ${longitude2}, ${latitude2})`;
@@ -204,9 +204,9 @@ server.tool(
 
 // Whiteboard clear tool
 server.tool(
-  "whiteboard-clear",
+  "whiteboard-clear", "Clears all drawings from the game's whiteboard",
   {
-    correlationId: z.number().optional()
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ correlationId }) => {
     let command = "WhiteboardClear()";
@@ -225,12 +225,12 @@ server.tool(
 
 // Launch nuke tool
 server.tool(
-  "launch-nuke",
+  "launch-nuke", "Launches a nuclear missile from a specified silo to target coordinates",
   { 
-    siloId: z.string(), 
-    targetLongitude: z.number(), 
-    targetLatitude: z.number(),
-    correlationId: z.number().optional()
+    siloId: z.string().describe("ID of the silo to launch the nuke from"), 
+    targetLongitude: z.number().describe("Target longitude coordinate for the nuclear strike"), 
+    targetLatitude: z.number().describe("Target latitude coordinate for the nuclear strike"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ siloId, targetLongitude, targetLatitude, correlationId }) => {
     let command = `LaunchNukeFromSilo(${siloId}, ${targetLongitude}, ${targetLatitude})`;
@@ -249,10 +249,10 @@ server.tool(
 
 // Set silo to defensive mode tool
 server.tool(
-  "set-silo-defensive",
+  "set-silo-defensive", "Sets a silo to defensive mode to shoot down incoming nuclear missiles",
   { 
-    siloId: z.string(),
-    correlationId: z.number().optional()
+    siloId: z.string().describe("ID of the silo to set to defensive mode"),
+    correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ siloId, correlationId }) => {
     let command = `StopLaunchingNukesFromSiloAndGoDefensive(${siloId})`;
@@ -271,8 +271,8 @@ server.tool(
 
 // Get command results by correlation IDs tool
 server.tool(
-  "get-command-results",
-  { correlationIds: z.array(z.number()) },
+  "get-command-results", "Retrieves the results of previously executed commands by their correlation IDs",
+  { correlationIds: z.array(z.number()).describe("List of correlation IDs to retrieve results for") },
   async ({ correlationIds }) => {
     try {
       const gameState = await fs.promises.readFile(OUTPUTFILE, 'utf8');
@@ -309,8 +309,8 @@ server.tool(
 
 // Generate AI response tool
 server.tool(
-  "generate-ai-response",
-  {},
+  "generate-ai-response", "Generates a prompt for an AI model based on the current game state",
+  {}, // No parameters needed
   async () => {
     try {
       // Read the current game state
