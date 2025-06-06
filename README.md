@@ -1,6 +1,6 @@
 # DEFCON MCP Server
 
-This is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server for [DEFCON](https://store.steampowered.com/app/1520/DEFCON/). Because AI needs to be able to play GLOBAL THERMONUCLEAR WAR.
+This is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server for Introversion Software's 2007 game [DEFCON](https://store.steampowered.com/app/1520/DEFCON/), which allows your favourite AI tool to play GLOBAL THERMONUCLEAR WAR.
 
 ## Setting up
 
