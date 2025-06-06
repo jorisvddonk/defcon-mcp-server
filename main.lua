@@ -172,6 +172,19 @@ function GetGameState()
       outfile:write(string.sub(tostring(id), 2, -2) .. ", " .. tostring(unit["type"]) .. ", " .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. "\n")
     end
   end
+  
+  outfile:write("\nYour fleets (FleetID, ships with IDs and locations):\n")
+  local fleets = GetOwnFleets()
+  for _, fleetId in ipairs(fleets) do
+    local ships = GetFleetUnits(fleetId)
+    outfile:write(string.sub(tostring(fleetId), 2, -2) .. ":\n")
+    for _, shipId in ipairs(ships) do
+      local shipType = GetUnitType(shipId)
+      local longitude = GetLongitude(shipId)
+      local latitude = GetLatitude(shipId)
+      outfile:write("  " .. string.sub(tostring(shipId), 2, -2) .. ", " .. shipType .. ", " .. longitude .. ", " .. latitude .. "\n")
+    end
+  end
 
   outfile:write("\nThese are the cities you must protect (longitude, latitude, population):\n")
 
