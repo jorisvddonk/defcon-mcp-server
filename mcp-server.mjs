@@ -164,7 +164,7 @@ server.tool(
 
 // Place structure tool
 server.tool(
-  "place-structure", "Places a military structure (Silo, RadarStation, or AirBase) at the specified coordinates",
+  "place-structure", "Places a military structure (Silo, RadarStation, or AirBase) at the specified coordinates. IMPORTANT: Check the response to verify if placement was successful!",
   { 
     longitude: z.number().describe("Longitude coordinate for structure placement (-180 to 180)"), 
     latitude: z.number().describe("Latitude coordinate for structure placement (-90 to 90)"), 
@@ -180,12 +180,29 @@ server.tool(
     let command = `PlaceStructure(${longitude}, ${latitude}, "${type}") -- ${correlationId}`;
     const success = writeCommandToGame(command);
     
+    if (!success) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: "Failed to place structure" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Wait a short time for the game to process the command
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if the command was successful
+    const result = await getCommandResult(correlationId);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Structure placement attempted: ${type} at ${longitude}, ${latitude} with correlation ID: ${correlationId}` : "Failed to place structure" 
+        text: `Structure placement ${result.found ? (result.success ? "succeeded" : "failed") : "attempted"}: ${type} at ${longitude}, ${latitude} with correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nIMPORTANT: You must use the get-command-results tool to verify if this placement was successful!"}`
       }],
-      correlationId: correlationId
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
     };
   }
 );
@@ -246,7 +263,7 @@ server.tool(
 
 // Launch nuke tool
 server.tool(
-  "launch-nuke", "Launches a nuclear missile from a specified silo to target coordinates",
+  "launch-nuke", "Launches a nuclear missile from a specified silo to target coordinates. IMPORTANT: Check the response to verify if launch was successful!",
   { 
     siloId: z.string().describe("ID of the silo to launch the nuke from"), 
     targetLongitude: z.number().describe("Target longitude coordinate for the nuclear strike"), 
@@ -262,19 +279,36 @@ server.tool(
     let command = `LaunchNukeFromSilo(${siloId}, ${targetLongitude}, ${targetLatitude}) -- ${correlationId}`;
     const success = writeCommandToGame(command);
     
+    if (!success) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: "Failed to launch nuke" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Wait a short time for the game to process the command
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if the command was successful
+    const result = await getCommandResult(correlationId);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Nuke launch attempted from silo ${siloId} to (${targetLongitude}, ${targetLatitude}) with correlation ID: ${correlationId}` : "Failed to launch nuke" 
+        text: `Nuke launch ${result.found ? (result.success ? "succeeded" : "failed") : "attempted"} from silo ${siloId} to (${targetLongitude}, ${targetLatitude}) with correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nIMPORTANT: You must use the get-command-results tool to verify if this launch was successful!"}`
       }],
-      correlationId: correlationId
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
     };
   }
 );
 
 // Set silo to defensive mode tool
 server.tool(
-  "set-silo-defensive", "Sets a silo to defensive mode to shoot down incoming nuclear missiles",
+  "set-silo-defensive", "Sets a silo to defensive mode to shoot down incoming nuclear missiles. IMPORTANT: Check the response to verify if the command was successful!",
   { 
     siloId: z.string().describe("ID of the silo to set to defensive mode"),
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
@@ -288,15 +322,64 @@ server.tool(
     let command = `StopLaunchingNukesFromSiloAndGoDefensive(${siloId}) -- ${correlationId}`;
     const success = writeCommandToGame(command);
     
+    if (!success) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: "Failed to set silo to defensive mode" 
+        }],
+        correlationId: correlationId
+      };
+    }
+    
+    // Wait a short time for the game to process the command
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Check if the command was successful
+    const result = await getCommandResult(correlationId);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Silo ${siloId} set to defensive mode with correlation ID: ${correlationId}` : "Failed to set silo to defensive mode" 
+        text: `Silo ${siloId} ${result.found ? (result.success ? "successfully set" : "failed to set") : "attempted to set"} to defensive mode with correlation ID: ${correlationId}${result.found ? "\n\nResult: " + result.result : "\n\nIMPORTANT: You must use the get-command-results tool to verify if this command was successful!"}`
       }],
-      correlationId: correlationId
+      correlationId: correlationId,
+      success: result.found ? result.success : undefined
     };
   }
 );
+
+// Helper function to check command results
+async function getCommandResult(correlationId) {
+  try {
+    const gameState = await fs.promises.readFile(OUTPUTFILE, 'utf8');
+    const regex = new RegExp(`Command result:.*\\[ID:${correlationId}\\]`, 'g');
+    const matches = gameState.match(regex);
+    
+    if (matches) {
+      // Check if the command was successful
+      const successMatch = matches[0].match(/SUCCESS/);
+      return {
+        found: true,
+        success: !!successMatch,
+        result: matches[0]
+      };
+    } else {
+      return {
+        found: false,
+        success: false,
+        result: "No result found"
+      };
+    }
+  } catch (error) {
+    console.error("Error checking command result:", error);
+    return {
+      found: false,
+      success: false,
+      result: "Error checking command result"
+    };
+  }
+}
 
 // Get command results by correlation IDs tool
 server.tool(
