@@ -15,6 +15,7 @@ let lastGameState = "";
 let defconLevel = 5;
 let PROMPTSETTING;
 let PROMPTFILE;
+let lastCorrelationId = 1000; // Starting correlation ID
 
 // Initialize the MCP server
 const server = new McpServer({
@@ -117,16 +118,20 @@ server.tool(
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ message, correlationId }) => {
-    let command = `DebugLog("${message}")`;
-    if (correlationId !== undefined) {
-      command += ` -- ${correlationId}`;
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
     }
+    
+    let command = `DebugLog("${message}") -- ${correlationId}`;
     const success = writeCommandToGame(command);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Debug log sent: ${message}${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to send debug log" 
-      }]
+        text: success ? `Debug log sent: ${message} with correlation ID: ${correlationId}` : "Failed to send debug log" 
+      }],
+      correlationId: correlationId
     };
   }
 );
@@ -139,16 +144,20 @@ server.tool(
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ message, correlationId }) => {
-    let command = `SendChat("${message}")`;
-    if (correlationId !== undefined) {
-      command += ` -- ${correlationId}`;
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
     }
+    
+    let command = `SendChat("${message}") -- ${correlationId}`;
     const success = writeCommandToGame(command);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Chat message sent: ${message}${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to send chat message" 
-      }]
+        text: success ? `Chat message sent: ${message} with correlation ID: ${correlationId}` : "Failed to send chat message" 
+      }],
+      correlationId: correlationId
     };
   }
 );
@@ -163,16 +172,20 @@ server.tool(
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ longitude, latitude, type, correlationId }) => {
-    let command = `PlaceStructure(${longitude}, ${latitude}, "${type}")`;
-    if (correlationId !== undefined) {
-      command += ` -- ${correlationId}`;
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
     }
+    
+    let command = `PlaceStructure(${longitude}, ${latitude}, "${type}") -- ${correlationId}`;
     const success = writeCommandToGame(command);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Structure placement attempted: ${type} at ${longitude}, ${latitude}${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to place structure" 
-      }]
+        text: success ? `Structure placement attempted: ${type} at ${longitude}, ${latitude} with correlation ID: ${correlationId}` : "Failed to place structure" 
+      }],
+      correlationId: correlationId
     };
   }
 );
@@ -188,16 +201,20 @@ server.tool(
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ longitude1, latitude1, longitude2, latitude2, correlationId }) => {
-    let command = `WhiteboardDraw(${longitude1}, ${latitude1}, ${longitude2}, ${latitude2})`;
-    if (correlationId !== undefined) {
-      command += ` -- ${correlationId}`;
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
     }
+    
+    let command = `WhiteboardDraw(${longitude1}, ${latitude1}, ${longitude2}, ${latitude2}) -- ${correlationId}`;
     const success = writeCommandToGame(command);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Whiteboard line drawn from (${longitude1}, ${latitude1}) to (${longitude2}, ${latitude2})${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to draw on whiteboard" 
-      }]
+        text: success ? `Whiteboard line drawn from (${longitude1}, ${latitude1}) to (${longitude2}, ${latitude2}) with correlation ID: ${correlationId}` : "Failed to draw on whiteboard" 
+      }],
+      correlationId: correlationId
     };
   }
 );
@@ -209,16 +226,20 @@ server.tool(
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ correlationId }) => {
-    let command = "WhiteboardClear()";
-    if (correlationId !== undefined) {
-      command += ` -- ${correlationId}`;
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
     }
+    
+    let command = `WhiteboardClear() -- ${correlationId}`;
     const success = writeCommandToGame(command);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Whiteboard cleared${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to clear whiteboard" 
-      }]
+        text: success ? `Whiteboard cleared with correlation ID: ${correlationId}` : "Failed to clear whiteboard" 
+      }],
+      correlationId: correlationId
     };
   }
 );
@@ -233,16 +254,20 @@ server.tool(
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ siloId, targetLongitude, targetLatitude, correlationId }) => {
-    let command = `LaunchNukeFromSilo(${siloId}, ${targetLongitude}, ${targetLatitude})`;
-    if (correlationId !== undefined) {
-      command += ` -- ${correlationId}`;
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
     }
+    
+    let command = `LaunchNukeFromSilo(${siloId}, ${targetLongitude}, ${targetLatitude}) -- ${correlationId}`;
     const success = writeCommandToGame(command);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Nuke launch attempted from silo ${siloId} to (${targetLongitude}, ${targetLatitude})${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to launch nuke" 
-      }]
+        text: success ? `Nuke launch attempted from silo ${siloId} to (${targetLongitude}, ${targetLatitude}) with correlation ID: ${correlationId}` : "Failed to launch nuke" 
+      }],
+      correlationId: correlationId
     };
   }
 );
@@ -255,16 +280,20 @@ server.tool(
     correlationId: z.number().optional().describe("Optional ID to correlate this command with its result")
   },
   async ({ siloId, correlationId }) => {
-    let command = `StopLaunchingNukesFromSiloAndGoDefensive(${siloId})`;
-    if (correlationId !== undefined) {
-      command += ` -- ${correlationId}`;
+    // Auto-generate correlation ID if not provided
+    if (correlationId === undefined) {
+      correlationId = ++lastCorrelationId;
     }
+    
+    let command = `StopLaunchingNukesFromSiloAndGoDefensive(${siloId}) -- ${correlationId}`;
     const success = writeCommandToGame(command);
+    
     return {
       content: [{ 
         type: "text", 
-        text: success ? `Silo ${siloId} set to defensive mode${correlationId !== undefined ? ` with correlation ID: ${correlationId}` : ''}` : "Failed to set silo to defensive mode" 
-      }]
+        text: success ? `Silo ${siloId} set to defensive mode with correlation ID: ${correlationId}` : "Failed to set silo to defensive mode" 
+      }],
+      correlationId: correlationId
     };
   }
 );
