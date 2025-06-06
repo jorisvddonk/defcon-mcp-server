@@ -269,6 +269,44 @@ server.tool(
   }
 );
 
+// Get command results by correlation IDs tool
+server.tool(
+  "get-command-results",
+  { correlationIds: z.array(z.number()) },
+  async ({ correlationIds }) => {
+    try {
+      const gameState = await fs.promises.readFile(OUTPUTFILE, 'utf8');
+      const results = {};
+      
+      // Search for each correlation ID in the output
+      for (const id of correlationIds) {
+        const regex = new RegExp(`Command result:.*\\[ID:${id}\\]`, 'g');
+        const matches = gameState.match(regex);
+        if (matches) {
+          results[id] = matches;
+        } else {
+          results[id] = ["No result found"];
+        }
+      }
+      
+      return {
+        content: [{ 
+          type: "text", 
+          text: JSON.stringify(results, null, 2)
+        }]
+      };
+    } catch (error) {
+      return {
+        content: [{ 
+          type: "text", 
+          text: `Error retrieving command results: ${error.message}` 
+        }],
+        isError: true
+      };
+    }
+  }
+);
+
 // Generate AI response tool
 server.tool(
   "generate-ai-response",
