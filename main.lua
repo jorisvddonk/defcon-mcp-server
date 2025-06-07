@@ -11,19 +11,27 @@ local events = {}
 function OnInit()
   SendChat("/name [BOT]MCP")
   SendChat("Hello! I am a bot controlled through Model Context Protocol!")
-  infile = io.open("R://input.txt", "w")
-  infile:close()
-  infile = io.open("R://input.txt", "r")
-  if not infile then
-    SendChat("Could not open input file")
-  else 
-    SendChat("Opened input file")
+  local inputfilename = "R://input.txt"
+  local outputfilename = "R://output.txt"
+  if GetCommandLineArguments("inputfile") ~= nil then
+    inputfilename = GetCommandLineArguments("inputfile")
   end
-  outfile = io.open("R://output.txt", "w")
+  if GetCommandLineArguments("outputfile") ~= nil then
+    outputfilename = GetCommandLineArguments("outputfile")
+  end
+  infile = io.open(inputfilename, "w")
+  infile:close()
+  infile = io.open(inputfilename, "r")
   if not infile then
-    SendChat("Could not open output file")
+    SendChat("Could not open input file: " .. inputfilename)
   else 
-    SendChat("Opened output file")
+    SendChat("Opened input file: " .. inputfilename)
+  end
+  outfile = io.open(outputfilename, "w")
+  if not infile then
+    SendChat("Could not open output file: " .. outputfilename)
+  else 
+    SendChat("Opened output file: " .. outputfilename)
   end
   main = coroutine.create(MTLTest)
   live = true

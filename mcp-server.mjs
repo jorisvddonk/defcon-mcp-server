@@ -9,10 +9,20 @@ import os from "os";
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-// Constants for file paths - platform specific
+// File paths - platform specific
 const isWindows = os.platform() === 'win32';
-const INPUTFILE = isWindows ? "R:\\input.txt" : "/mnt/r/input.txt";
-const OUTPUTFILE = isWindows ? "R:\\output.txt" : "/mnt/r/output.txt";
+let INPUTFILE = isWindows ? "R:\\input.txt" : "/mnt/r/input.txt";
+let OUTPUTFILE = isWindows ? "R:\\output.txt" : "/mnt/r/output.txt";
+// set from cli argument --inputfile=... and --outputfile=...
+if (process.argv.length > 2) {
+  process.argv.forEach((arg) => {
+    if (arg.startsWith("--inputfile=")) {
+      INPUTFILE = arg.split("=")[1];
+    } else if (arg.startsWith("--outputfile=")) {
+      OUTPUTFILE = arg.split("=")[1];
+    }
+  });
+}
 
 // Game state tracking
 let lastGameState = "";
