@@ -21,6 +21,9 @@ let PROMPTSETTING;
 let PROMPTFILE;
 let lastCorrelationId = 1000; // Starting correlation ID
 
+// various constants
+const SUCCESS_READ_TIMEOUT = 1000; // in ms
+
 // Initialize the MCP server
 const server = new McpServer({
   name: "DEFCON-LLM-Bot",
@@ -309,7 +312,7 @@ server.tool(
     }
     
     // Wait a short time for the game to process the command
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     
     // Check if the command was successful
     const result = await getCommandResult(correlationId);
@@ -434,7 +437,7 @@ server.tool(
     }
     
     // Wait a short time for the game to process the command
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     
     // Check if the command was successful
     const result = await getCommandResult(correlationId);
@@ -491,7 +494,7 @@ server.tool(
     }
     
     // Wait a short time for the game to process the command
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     
     // Check if the command was successful
     const result = await getCommandResult(correlationId);
@@ -548,7 +551,7 @@ server.tool(
     }
     
     // Wait a short time for the game to process the command
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     
     // Check if the command was successful
     const result = await getCommandResult(correlationId);
@@ -603,7 +606,7 @@ server.tool(
     }
     
     // Wait a short time for the game to process the command
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     
     // Check if the command was successful
     const result = await getCommandResult(correlationId);
@@ -655,7 +658,7 @@ server.tool(
       };
     }
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     const result = await getCommandResult(correlationId);
     
     return {
@@ -703,7 +706,7 @@ server.tool(
       };
     }
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     const result = await getCommandResult(correlationId);
     
     return {
@@ -751,7 +754,7 @@ server.tool(
       };
     }
     
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, SUCCESS_READ_TIMEOUT));
     const result = await getCommandResult(correlationId);
     
     return {
