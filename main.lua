@@ -10,8 +10,8 @@ local events = {}
 
 -- Required by luabot binding.
 function OnInit()
-  SendChat("/name [BOT]MetaLlama3_1")
-  SendChat("Hello! I am lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF")
+  SendChat("/name [BOT]MCP")
+  SendChat("Hello! I am a bot controlled through Model Context Protocol!")
   infile = io.open("R://input.txt", "w")
   infile:close()
   infile = io.open("R://input.txt", "r")
