@@ -4,7 +4,6 @@ local infile
 local outfile
 local offset = 0
 local getStateNext = true
-local test = false
 local eventCounter = 0
 local events = {}
 
@@ -353,11 +352,6 @@ function MTLTest()
     end
 
     if GetGameTick() % 10 == 0 then
-      if test then
-        attemptFleet(-150.0, 30.0, "Sub", "Sub", "Sub", "Sub", "Sub", "Sub")
-        test = false
-      end
-
       -- write output
       if getStateNext == true then
         getStateNext = false
@@ -382,7 +376,7 @@ function MTLTest()
             DebugLog(debuglog)
           end
 
-          local chat = string.match(line, "^SendChat%(\"(.*)\"%)")
+          local chat, corrid = string.match(line, "^SendChat%(\"(.*)\"%)%s*%-%-%s*(%d+)$")
           if chat then
             DebugLog(chat)
             SendChat(chat)
