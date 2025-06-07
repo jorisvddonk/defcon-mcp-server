@@ -321,6 +321,10 @@ end
 function MTLTest()
   while true do
     coroutine.yield()
+    if GetGameTick() % 100 == 0 then
+      getStateNext = true
+    end
+
     if GetGameTick() % 10 == 0 then
       if test then
         attemptFleet(-150.0, 30.0, "Sub", "Sub", "Sub", "Sub", "Sub", "Sub")
