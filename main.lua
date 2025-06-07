@@ -370,6 +370,24 @@ function GetGameState()
     else
       outfile:write("NO AirBase - do not try to place this!\n")
     end
+
+    outfile:write("\nYou can still create fleets, using ships:\n")
+    if GetRemainingUnits("Sub") > 0 then
+      outfile:write("Sub - " .. GetRemainingUnits("Sub") .. "\n")
+    else
+      outfile:write("NO Sub - do not try to place this!\n")
+    end
+    if GetRemainingUnits("BattleShip") > 0 then
+      outfile:write("BattleShip - " .. GetRemainingUnits("BattleShip") .. "\n")
+    else
+      outfile:write("NO BattleShip - do not try to place this!\n")
+    end
+    if GetRemainingUnits("Carrier") > 0 then
+      outfile:write("Carrier - " .. GetRemainingUnits("Carrier") .. "\n")
+    else
+      outfile:write("NO Carrier - do not try to place this!\n")
+    end
+
   end
 
   if GetDefconLevel() <= 3 then
