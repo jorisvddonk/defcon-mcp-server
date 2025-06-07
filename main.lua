@@ -226,6 +226,15 @@ function getThingByID(type, idstr, mineOnly)
   end
 end
 
+function getMyFleetByID(idstr)
+  local fleets = GetOwnFleets()
+  for _, id in pairs(fleets) do
+    if string.sub(tostring(id), 2, -2) == idstr then
+      return id
+    end
+  end
+end
+
 function GetGameState()
   local teamid = GetOwnTeamID()
   local cityids = GetCityIDs()
@@ -484,7 +493,7 @@ function MTLTest()
           end
           if fleetId then
             local success = false
-            local fleetId_obj = getThingByID("Fleet", fleetId, true)
+            local fleetId_obj = getMyFleetByID(fleetId)
             if fleetId_obj then
               local fleet = GetFleetUnits(fleetId_obj)
               if fleet then
