@@ -84,13 +84,11 @@ function OnEvent (eventtype, sourceID, targetID, unittype, longitude, latitude)
   outfile:flush()
 end
 
-function PlaceFleetAngle(longitude, latitude, type, angle)
+function PlaceFleetAngle(longitude, latitude, type, angle, fleetsize)
   -- angle goes from 1 to 6
-  local dist = 2
-  local a = ((math.pi * 2) / 6) * (angle - 1)
-  local lat = latitude + (math.sin(a) * dist)
-  local lon = longitude + (math.cos(a) * dist)
-  PlaceFleet(lon, lat, type)
+  local lono, lato = GetFleetMemberOffset(fleetsize, angle)
+  DebugLog("Placing fleet member at angle " .. angle .. " with offset: " .. lono .. ", " .. lato)
+  PlaceFleet(longitude + lono, latitude + lato, type)
 end
 
 function attemptFleet(longitude, latitude, type1, type2, type3, type4, type5, type6)
@@ -100,6 +98,7 @@ function attemptFleet(longitude, latitude, type1, type2, type3, type4, type5, ty
   if a == true and b == true then
     success = true
     DebugLog("Valid placement (Fleet): " .. longitude .. " / " .. latitude)
+    local fleetsize = 0
     local t1 = ensureIsShipType(type1)
     local t2 = ensureIsShipType(type2)
     local t3 = ensureIsShipType(type3)
@@ -107,28 +106,47 @@ function attemptFleet(longitude, latitude, type1, type2, type3, type4, type5, ty
     local t5 = ensureIsShipType(type5)
     local t6 = ensureIsShipType(type6)
     if t1 then
+      fleetsize = fleetsize + 1
+    end
+    if t2 then
+      fleetsize = fleetsize + 1
+    end
+    if t3 then
+      fleetsize = fleetsize + 1
+    end
+    if t4 then
+      fleetsize = fleetsize + 1
+    end
+    if t5 then
+      fleetsize = fleetsize + 1
+    end
+    if t6 then
+      fleetsize = fleetsize + 1
+    end
+    DebugLog("fleetSize - " .. fleetsize)
+    if t1 then
       DebugLog("1 - " .. t1)
-      PlaceFleetAngle(longitude, latitude, t1, 1)
+      PlaceFleetAngle(longitude, latitude, t1, 1, fleetsize)
     end
     if t2 then
       DebugLog("2 - " .. t2)
-      PlaceFleetAngle(longitude, latitude, t2, 2)
+      PlaceFleetAngle(longitude, latitude, t2, 2, fleetsize)
     end
     if t3 then
       DebugLog("3 - " .. t3)
-      PlaceFleetAngle(longitude, latitude, t3, 3)
+      PlaceFleetAngle(longitude, latitude, t3, 3, fleetsize)
     end
     if t4 then
       DebugLog("4 - " .. t4)
-      PlaceFleetAngle(longitude, latitude, t4, 4)
+      PlaceFleetAngle(longitude, latitude, t4, 4, fleetsize)
     end
     if t5 then
       DebugLog("5 - " .. t5)
-      PlaceFleetAngle(longitude, latitude, t5, 5)
+      PlaceFleetAngle(longitude, latitude, t5, 5, fleetsize)
     end
     if t6 then
       DebugLog("6 - " .. t6)
-      PlaceFleetAngle(longitude, latitude, t6, 6)
+      PlaceFleetAngle(longitude, latitude, t6, 6, fleetsize)
     end
   else
     --DebugLog("Invalid placement")
