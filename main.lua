@@ -273,7 +273,57 @@ function GetGameState()
 
   outfile:write("\n-- game state info start --:\n")
   outfile:write("\nDEFCON level: " .. defcon .. "\n")
+  outfile:write("Game time (seconds): " .. GetGameTime() .. "\n")
   outfile:write("Total events: " .. totalEvents .. "\n\n")
+
+  local teamid = GetOwnTeamID()
+  local teamname = GetTeamName(teamid)
+  outfile:write("Your player name: " .. teamname .. "\n")
+  local teamterritories = GetTeamTerritories(teamid)
+  outfile:write("Your player territories: " .. table.concat(teamterritories, ", ") .. "\n")
+  local allianceId = GetAllianceID(teamid)
+  outfile:write("Your alliance ID: " .. string.sub(tostring(allianceId), 2, -2) .. "\n")
+  -- get allies
+  local allTeamIDs = GetAllTeamIDs()
+
+  outfile:write("Your allies: ")
+  for _, id in ipairs(allTeamIDs) do
+    local alliance = GetAllianceID(id)
+    local first = true
+    if alliance == allianceId and id ~= teamid then
+      if first == false then
+        outfile:write(", ")
+      end
+      outfile:write(GetTeamName(id))
+      local territoryNames = GetTeamTerritories(id)
+      if territoryNames ~= nil and #territoryNames > 0 then
+        outfile:write(" (" .. table.concat(territoryNames, ", ") .. ")")
+      end
+      first = false
+    end
+  end
+  outfile:write("\n")
+  -- get enemy territories
+  outfile:write("Your enemies: ")
+  for _, id in ipairs(allTeamIDs) do
+    local alliance = GetAllianceID(id)
+    local first = true
+    if alliance ~= allianceId then
+      if first == false then
+        outfile:write(", ")
+      end
+      outfile:write(GetTeamName(id))
+      local territoryNames = GetTeamTerritories(id)
+      if territoryNames ~= nil and #territoryNames > 0 then
+        outfile:write(" (" .. table.concat(territoryNames, ", ") .. ")")
+      end
+      first = false
+    end
+  end
+  outfile:write("\n")
+
+
+
 
   outfile:write("\nYour units and buildings currently on the map (id, typename, longitude, latitude):\n")
   for id, unit in pairs(ud) do
