@@ -400,17 +400,38 @@ function GetGameState()
   end
 
   if GetDefconLevel() <= 1 then
-    outfile:write("\nYour silos with nukes (SiloID, nukecount):\n")
+    outfile:write("\nYour silos with nukes (SiloID, nukecount, state):\n")
     for id, unit in pairs(ud) do
       if unit["team"] == teamid and unit["type"] == "Silo" and GetNukeCount(id) > 0 then
-        outfile:write(string.sub(tostring(id), 2, -2) .. ", " --[[ .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. ", " --]] .. tostring(GetNukeCount(id)) .. "\n")
+        local state = unit["state"] -- 0 - icbm launch mode, 1 - air defense, 2 - n/a
+        outfile:write(string.sub(tostring(id), 2, -2) .. ", " --[[ .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. ", " --]] .. tostring(GetNukeCount(id)) .. 
+        ", " .. (state == 0 and "ICBM LAUNCH" or state == 1 and "AIR DEFENSE" or state == 2 and "N/A" or "UNKNOWN")
+        .. "\n")
       end
     end
 
-    outfile:write("\nYour silos without any nukes (SiloID) - HINT, you may want to set these to defensive mode!:\n")
+    outfile:write("\nYour silos without any nukes (SiloID, state) - HINT, you may want to set these to defensive mode!:\n")
     for id, unit in pairs(ud) do
       if unit["team"] == teamid and unit["type"] == "Silo" and GetNukeCount(id) == 0 then
-        outfile:write(string.sub(tostring(id), 2, -2) .. "\n")
+        local state = unit["state"] -- 0 - icbm launch mode, 1 - air defense, 2 - n/a
+        outfile:write(string.sub(tostring(id), 2, -2) ..
+        ", " .. (state == 0 and "ICBM LAUNCH" or state == 1 and "AIR DEFENSE" or state == 2 and "N/A" or "UNKNOWN")
+        .. "\n")
+      end
+    end
+
+    outfile:write("\nNukes in flight (longitude, latitude, target longitude, target latitude, owner id, team info, state):\n")
+    for id, unit in pairs(ud) do
+      if unit["type"] == "Nuke" then
+        local isYours = unit["team"] == teamid
+        local isAlly = unit["team"] ~= teamid and GetAllianceID(unit["team"]) == GetAllianceID(teamid)
+        local state = unit["state"] -- 0 - on target, 1 - disarm, 2 - n/a
+        local targetLongitude, targetLatitude = GetMovementTargetLocation(id)
+        outfile:write(string.sub(tostring(id), 2, -2) .. ", " .. tostring(unit["longitude"]) .. ", " .. tostring(unit["latitude"]) .. 
+                      ", " .. tostring(targetLongitude) .. ", " .. tostring(targetLatitude) ..
+                      ", " .. tostring(unit["team"]) .. ", " .. (isYours and "YOURS" or isAlly and "ALLY" or "ENEMY") .. ", " 
+                      .. (state == 0 and "ON TARGET" or state == 1 and "DISARM" or state == 2 and "N/A" or "UNKNOWN")
+                      .. "\n")
       end
     end
   end
